@@ -184,9 +184,6 @@ def get_all_forums_topics(endpoint="index.php"):
         }
     )[1]
 
-    # print(forums_table)
-    # exit(0)
-
     for row in forums_table:
         soup = BeautifulSoup(str(row), "lxml")
         forumid = soup.find("a", {
@@ -201,8 +198,6 @@ def get_all_forums_topics(endpoint="index.php"):
     HREF = 0
     NAME = 1
     sys.stdout.write("Forum cnt: {}\n".format(len(all_forums)))
-
-    all_forums = [all_forums[1], all_forums[0]]
 
     for forum in all_forums:
         topics.update(get_topics_from_forum(forum[HREF], forum[NAME]))
