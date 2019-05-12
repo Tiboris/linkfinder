@@ -1,7 +1,9 @@
 import os
 import sys
 # import threading
+import time
 import errno
+import numpy
 import signal
 import argparse
 import gentoo_fetcher
@@ -18,8 +20,8 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 forum_link = "https://forums.gentoo.org/"
-SAMPLE = False
-ALL_DATA = True
+dest = "./download"
+
 T = "threads"
 S = "sample"
 
@@ -46,24 +48,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def run(threads, sample):
-    dest = "./download"
-
-    try:
-        os.mkdir(dest)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            raise
-        pass
-
+def process_topics(topics, thread=1):
     topic_counter = 0
-    thread_name = "T_"
-
-    all_topics = gentoo_fetcher.get_all_forums_topics(get_all=sample)
-    sys.stdout.write("Topic cnt TOTAL: {}\n".format(len(all_topics)))
-
-    for topic_id in all_topics:
-        thread_name = "T_"
+    for topic_id in topics:
+        thread_name = "T_" + str(thread)
         posts = []
         page = 0
 
@@ -150,6 +138,43 @@ def run(threads, sample):
         with open("{}/{}.xml".format(dest, topic_id + ".html"), "wb") as f:
             xmlstr = et.tostring(newroot, encoding='utf8', method='xml')
             f.write(xmlstr)
+
+
+def run(threads, sample):
+    start_time = time.time()
+
+    try:
+        os.mkdir(dest)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            raise
+        pass
+
+    all_topics = gentoo_fetcher.get_all_forums_topics(get_all=sample)
+    sys.stdout.write("Topics TOTAL: {}\n".format(len(all_topics)))
+
+    pids = []
+    if threads == 1:
+        process_topics(all_topics, threads)
+    else:
+        all_topics = numpy.array_split(list(all_topics), threads)
+
+        for thread in range(threads):
+            pid = os.fork()
+            pids.append(pid)
+
+            if pid == 0:
+                process_topics(all_topics[thread], os.getpid())
+                exit(0)
+            else:
+                continue
+
+    for pid in pids:
+        os.waitpid(pid, 0)
+
+    print("Total time:", time.time() - start_time)
+
+    exit(0)
 
 
 if __name__ == "__main__":
