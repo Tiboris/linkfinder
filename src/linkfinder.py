@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 import errno
@@ -49,10 +50,12 @@ def parse_args():
 
 def process_topics(topics, thread=1):
     topic_counter = 0
+    # topics = ["viewtopic-t-30567"]
     for topic_id in topics:
-        thread_name = "T_" + str(thread)
+        thread_name = "PID: " + str(thread)
         posts = []
         page = 0
+        topic_links = []
 
         while 1:
             newroot = et.Element('root')
@@ -100,7 +103,7 @@ def process_topics(topics, thread=1):
             topic_name.text = text.decode('unicode-escape')
             topic.append(topic_name)
             topic_address = et.Element("topic_address")
-            topic_address.text = forum_link + str(topic_index) \
+            topic_address.text = forum_link + str(topic_id) \
                 + "-postdays-0-postorder-asc-start-" + str(page) + ".html"
             topic.append(topic_address)
 
@@ -128,15 +131,42 @@ def process_topics(topics, thread=1):
                 topic_post.append(post_subject)
                 topic_post.append(post_text)
 
+                topic_links = topic_links + re.findall(
+                    "(https?:\/\/[^\s]+)",
+                    str(x.raw_body)
+                )
+
+                # topic_links = topic_links + re.findall(
+                #     '(https?:\/\/[^\s]+)',
+                #     "https://google.dc This is my t\n"
+                #     "s is my tweet check it out http://example.com/blahk it out http://examdaasdasddaple.com/blah\n"
+                #     "cas fdff s https://google.dc This is my t aff ag  https://google.oc"
+                # )
+                # print("resiul:", topic_links)
+                # if topic_links:
+                #     with open("{}/{}.links".format(
+                #             dest, topic_id), "w") as linksfile:
+                #         for line in topic_links:
+                #             linksfile.write(line + "\n")
+
+                # exit(0)
+
                 topic.append(topic_post)
 
             newroot.append(topic)
 
         print("Number of posts:", len(posts))
 
-        with open("{}/{}.xml".format(dest, topic_id + ".html"), "wb") as f:
+        with open("{}/{}.xml".format(dest, topic_id), "wb") as f:
             xmlstr = et.tostring(newroot, encoding='utf8', method='xml')
             f.write(xmlstr)
+
+        if topic_links:
+            print("Links found:", len(topic_links))
+            with open("{}/{}.links".format(
+                    dest, topic_id), "w") as linksfile:
+                for line in topic_links:
+                    linksfile.write(line + "\n")
 
 
 def run(threads, sample):
@@ -149,12 +179,12 @@ def run(threads, sample):
             raise
         pass
 
-    all_topics = gentoo_fetcher.get_all_forums_topics(get_all=sample)
+    all_topics = gentoo_fetcher.get_all_forums_topics(get_all=not sample)
     sys.stdout.write("Topics TOTAL: {}\n".format(len(all_topics)))
 
     pids = []
     if threads == 1:
-        process_topics(all_topics, threads)
+        process_topics(all_topics, os.getpid())
     else:
         all_topics = numpy.array_split(list(all_topics), threads)
 

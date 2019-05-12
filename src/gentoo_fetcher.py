@@ -24,6 +24,7 @@ def parse_posts(html):
     )
     names = soup.find_all("span", {"class": "name"})
     post_details = soup.find_all("span", {"class": "postdetails"})[1::2]
+    raw_body = soup.find_all("span", {"class": "postbody"})
 
     rows = rows1
 
@@ -50,7 +51,8 @@ def parse_posts(html):
         post = Post(
             str(names[x].text),
             posted[x], subjects[x],
-            str(rows[x].text)
+            str(rows[x].text),
+            raw_body[x]
         )
         posts.append(post)
 
@@ -162,7 +164,7 @@ def get_all_forums_topics(endpoint="index.php", get_all=True):
             )
 
     if not get_all:  # run only on sample forums
-        all_forums = [all_forums[0], all_forums[1]]
+        all_forums = [all_forums[1]] # all_forums[0],
 
     topics = set()
     HREF = 0

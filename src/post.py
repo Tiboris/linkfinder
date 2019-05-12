@@ -8,7 +8,7 @@ class Post():
     subject = ""
     text = ""
 
-    def __init__(self, author, posted, subject, text):
+    def __init__(self, author, posted, subject, text, raw_body):
 
         self.author = str(author)
         # self.author = self.author.decode('utf-8').encode('unicode-escape')
@@ -25,6 +25,7 @@ class Post():
         self.text = text.replace('\n', '\\n')
         # self.text = self.text.decode('utf-8').encode('unicode-escape')
         # self.text = self.text.decode('unicode-escape')
+        self.raw_body = str(raw_body)
 
     def __str__(self):
         string = "Author = " + self.author + " : " + \
