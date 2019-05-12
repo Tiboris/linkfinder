@@ -3,6 +3,7 @@ import sys
 # import threading
 import errno
 import signal
+import argparse
 import gentoo_fetcher
 
 from bs4 import BeautifulSoup
@@ -19,9 +20,33 @@ signal.signal(signal.SIGINT, signal_handler)
 forum_link = "https://forums.gentoo.org/"
 SAMPLE = False
 ALL_DATA = True
+T = "threads"
+S = "sample"
 
 
-def run(sample):
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        default="1",
+        required=False,
+        help="Number of threads to use",
+    )
+    parser.add_argument(
+        "-s",
+        "--sample",
+        default=False,
+        action="store_true",
+        required=False,
+        help="Show realtime rendering.",
+    )
+
+    return parser.parse_args()
+
+
+def run(threads, sample):
     dest = "./download"
 
     try:
@@ -128,4 +153,5 @@ def run(sample):
 
 
 if __name__ == "__main__":
-    run(SAMPLE)
+    args = vars(parse_args())
+    run(args[T], args[S])
