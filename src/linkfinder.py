@@ -1,6 +1,5 @@
 import os
 import sys
-# import threading
 import time
 import errno
 import numpy

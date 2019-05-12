@@ -162,7 +162,7 @@ def get_all_forums_topics(endpoint="index.php", get_all=True):
             )
 
     if not get_all:  # run only on sample forums
-        all_forums = [all_forums[1]]  # , all_forums[0]
+        all_forums = [all_forums[0], all_forums[1]]
 
     topics = set()
     HREF = 0
