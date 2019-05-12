@@ -169,7 +169,6 @@ def get_all_forums_topics(endpoint="index.php", get_all=True):
     NAME = 1
     sys.stdout.write("Forum cnt: {}\n".format(len(all_forums)))
 
-
     for forum in all_forums:
         topics.update(get_topics_from_forum(forum[HREF], forum[NAME]))
         sys.stdout.write("\n")
