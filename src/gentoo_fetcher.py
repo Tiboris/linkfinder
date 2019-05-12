@@ -112,6 +112,8 @@ def get_topics_from_forum(forum, name):
 
         if "No posts exist for this topic" in str(html, "utf-8"):
             break
+        if "There are no posts in this forum." in str(html, "utf-8"):
+            break
         if "Please enter your username and " \
                 " password to log in." in str(html, "utf-8"):
             break
@@ -144,12 +146,13 @@ def get_topics_from_forum(forum, name):
 
         if counter == guidelines:
             break  # same topics on onexiting pages - Announcements
-        sys.stdout.flush()
-        sys.stdout.write(
-            "Forum [{}] - topics to download: {}, page {}. {}\r".format(
-                name, len(topics), int(page/pagesize), composed_url
-            )
+
+        new_message = "Forum [{}] - topics to download: {}\r".format(
+            name, len(topics)
         )
+
+        sys.stdout.flush()
+        sys.stdout.write(new_message)
 
         page += pagesize
 
@@ -197,10 +200,13 @@ def get_all_forums_topics(endpoint="index.php"):
     topics = set()
     HREF = 0
     NAME = 1
-    sys.stderr.write("Forum cnt: {}".format(len(all_forums)))
+    sys.stdout.write("Forum cnt: {}\n".format(len(all_forums)))
+
+    all_forums = [all_forums[1], all_forums[0]]
+
     for forum in all_forums:
         topics.update(get_topics_from_forum(forum[HREF], forum[NAME]))
-        sys.stderr.write("Topic cnt so far: {}".format(len(topics)))
+        sys.stdout.write("\n")
 
     return topics
 
@@ -227,8 +233,9 @@ def single_run():
     newroot = deepcopy(root)
 
     all_topics = get_all_forums_topics()
-    sys.stderr.write("Topic cnt TOTAL: {}".format(len(all_topics)))
-    exit(0)
+
+    sys.stdout.write("Topic cnt TOTAL: {}\n".format(len(all_topics)))
+    exit(0)  # stop here not to donwnload yet
 
     for topic_id in all_topics:
         posts = []
@@ -236,7 +243,7 @@ def single_run():
 
         while 1:
             response = urlopen(
-                forum_link + + str(topic_id) +
+                forum_link + str(topic_id) +
                 "-postdays-0-postorder-asc-start-" + str(page) + ".html"
             )
 
@@ -244,8 +251,6 @@ def single_run():
                 html = response.read()
             except Exception:
                 break
-
-            print(type(html))
 
             if page == 0 and "The topic or post you requested " \
                     "does not exist" in str(html, "utf-8"):
@@ -257,7 +262,7 @@ def single_run():
                     " password to log in." in str(html, "utf-8"):
                 break
 
-            name = forum_link + "viewtopic-t-" + str(topic_id) + \
+            name = forum_link + str(topic_id) + \
                 "-postdays-0-postorder-asc-start-" + str(page)
 
             print(thread_name + "\t: " + topic_id + ".html")
