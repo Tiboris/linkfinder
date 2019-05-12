@@ -90,15 +90,16 @@ forum_link = "https://forums.gentoo.org/"
 root = et.Element('root')
 
 
-def get_topics_from_forum(forum):
-    page = 25
-    topics = []
+def get_topics_from_forum(forum, name):
+    page = 0
+    pagesize = 50
+    topics = set()
 
-    while 1:
-        response = urlopen(
-            forum_link + forum +
+    while True:
+        composed_url = forum_link + forum + \
             "-topicdays-0-start-" + str(page) + ".html"
-        )
+
+        response = urlopen(composed_url)
 
         try:
             html = response.read()
@@ -123,57 +124,85 @@ def get_topics_from_forum(forum):
             }
         )
 
+        guidelines = 0
+        for item in topics_table_tags:
+            soup = BeautifulSoup(str(item), "lxml")
+            if soup.find_all("b"):
+                guidelines += 1
+
+        counter = 0
         for row in topics_table_tags:
             soup = BeautifulSoup(str(row), "lxml")
+
             topicid = soup.find("a", {
                 "class": "topictitle"
             })
-            if topicid:
-                topics.append(topicid["href"].split(".")[0])
 
+            if topicid:
+                counter += 1
+                topics.add(topicid["href"].split(".")[0])
+
+        if counter == guidelines:
+            break  # same topics on onexiting pages - Announcements
         sys.stdout.flush()
-        sys.stdout.write("Topics to download: {}\r".format(len(topics)))
+        sys.stdout.write(
+            "Forum [{}] - topics to download: {}, page {}. {}\r".format(
+                name, len(topics), int(page/pagesize), composed_url
+            )
+        )
+
+        page += pagesize
 
     return topics
 
 
 def get_all_forums_topics(endpoint="index.php"):
 
-    forums = urlopen(forum_link + endpoint)
+    all_forums = []
 
-    soup = BeautifulSoup(forums.read(), "lxml")
+    response = urlopen(forum_link + endpoint)
 
-    forums_table = soup.find("table", {
+    try:
+        html = response.read()
+    except Exception:
+        sys.stderr.write("An error happened!")
+        exit(1)
+
+    if "Please enter your username and " \
+            " password to log in." in str(html, "utf-8"):
+        sys.stderr.write("An error happened!")
+        exit(1)
+
+    soup = BeautifulSoup(html, "lxml")
+
+    forums_table = soup.findAll("table", {
         "width": "100%", "cellpadding": "2", "cellspacing": "1",
-        "class": "forumline"
+        "class": "forumline", "border": "0"
         }
-    )
+    )[1]
 
-        # for row in forums_table:
-        #     soup = BeautifulSoup(str(row), "lxml")
-        #     topicid = soup.find("a", {
-        #         "class": "topictitle"
-        #     })
-        #     if topicid:
-        #         topics.append(topicid["href"].split(".")[0])
+    # print(forums_table)
+    # exit(0)
 
-        # sys.stdout.flush()
-        # sys.stdout.write("Topics to download: {}\r".format(len(topics)))
+    for row in forums_table:
+        soup = BeautifulSoup(str(row), "lxml")
+        forumid = soup.find("a", {
+            "class": "forumlink"
+        })
+        if forumid:
+            all_forums.append(
+                (forumid["href"].split(".")[0], forumid.contents[0])
+            )
 
-    all_forums = ["viewforum-f-1.html"]
-
-
-
-    topics = []
-
+    topics = set()
+    HREF = 0
+    NAME = 1
+    sys.stderr.write("Forum cnt: {}".format(len(all_forums)))
     for forum in all_forums:
-        topics += get_topics_from_forum(forum)
+        topics.update(get_topics_from_forum(forum[HREF], forum[NAME]))
+        sys.stderr.write("Topic cnt so far: {}".format(len(topics)))
 
-    topics += ["1096286", "736457"]
     return topics
-
-
-
 
 
 def init_mode(thread_name, topic_id):
@@ -198,6 +227,8 @@ def single_run():
     newroot = deepcopy(root)
 
     all_topics = get_all_forums_topics()
+    sys.stderr.write("Topic cnt TOTAL: {}".format(len(all_topics)))
+    exit(0)
 
     for topic_id in all_topics:
         posts = []
