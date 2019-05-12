@@ -1,2 +1,2 @@
 # linkfinder
-Find external links in topics of Gentoo forum 
+Downloads the entire Gentoo forum and finds external links in topics of it.
