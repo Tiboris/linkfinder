@@ -183,6 +183,8 @@ def run(threads, sample):
     sys.stdout.write("Topics TOTAL: {}\n".format(len(all_topics)))
 
     pids = []
+    print("List fetch time:", time.time() - start_time)
+
     if threads == 1:
         process_topics(all_topics, os.getpid())
     else:
